@@ -1,13 +1,13 @@
 /** @type {import("pliny/config").PlinyConfig } */
 const siteMetadata = {
-  title: 'Ani\'s Blog',
+  title: "Ani's Blog",
   author: 'Anirudh Sathiya',
-  headerTitle: 'Ani\'s Blog',
+  headerTitle: "Ani's Blog",
   description: 'Fill this up',
   language: 'en-us',
   theme: 'system', // system, dark or light
-  siteUrl: 'https://tailwind-nextjs-starter-blog.vercel.app',
-  siteRepo: 'https://github.com/timlrx/tailwind-nextjs-starter-blog',
+  siteUrl: 'https://anirudhsathiya.com',
+  siteRepo: 'https://github.com/Anirudh171202/blog-site',
   siteLogo: `${process.env.BASE_PATH || ''}/static/images/logo.png`,
   socialBanner: `${process.env.BASE_PATH || ''}/static/images/twitter-card.png`,
   mastodon: 'https://mastodon.social/@mastodonuser',
