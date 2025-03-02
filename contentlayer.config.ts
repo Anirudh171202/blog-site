@@ -81,10 +81,7 @@ async function createTagCount(allBlogs) {
 }
 
 function createSearchIndex(allBlogs) {
-  if (
-    siteMetadata?.search?.provider === 'kbar' &&
-    siteMetadata.search.kbarConfig.searchDocumentsPath
-  ) {
+  if (siteMetadata?.search?.provider === 'kbar' && siteMetadata.search.kbarConfig.searchDocumentsPath) {
     writeFileSync(
       `public/${path.basename(siteMetadata.search.kbarConfig.searchDocumentsPath)}`,
       JSON.stringify(allCoreContent(sortPosts(allBlogs)))
@@ -152,14 +149,7 @@ export default makeSource({
   documentTypes: [Blog, Authors],
   mdx: {
     cwd: process.cwd(),
-    remarkPlugins: [
-      remarkExtractFrontmatter,
-      remarkGfm,
-      remarkCodeTitles,
-      remarkMath,
-      remarkImgToJsx,
-      remarkAlert,
-    ],
+    remarkPlugins: [remarkExtractFrontmatter, remarkGfm, remarkCodeTitles, remarkMath, remarkImgToJsx, remarkAlert],
     rehypePlugins: [
       rehypeSlug,
       [

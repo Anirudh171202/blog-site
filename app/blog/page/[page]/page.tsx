@@ -22,21 +22,13 @@ export default async function Page(props: { params: Promise<{ page: string }> })
   if (pageNumber <= 0 || pageNumber > totalPages || isNaN(pageNumber)) {
     return notFound()
   }
-  const initialDisplayPosts = posts.slice(
-    POSTS_PER_PAGE * (pageNumber - 1),
-    POSTS_PER_PAGE * pageNumber
-  )
+  const initialDisplayPosts = posts.slice(POSTS_PER_PAGE * (pageNumber - 1), POSTS_PER_PAGE * pageNumber)
   const pagination = {
     currentPage: pageNumber,
     totalPages: totalPages,
   }
 
   return (
-    <ListLayout
-      posts={posts}
-      initialDisplayPosts={initialDisplayPosts}
-      pagination={pagination}
-      title="All Posts"
-    />
+    <ListLayout posts={posts} initialDisplayPosts={initialDisplayPosts} pagination={pagination} title="All Posts" />
   )
 }

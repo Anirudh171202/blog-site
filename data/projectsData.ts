@@ -9,7 +9,6 @@ const projectsData: Project[] = [
   {
     title: 'Nothing to see here yet',
     description: ``,
-
   },
 ]
 

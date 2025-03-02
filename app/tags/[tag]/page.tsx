@@ -9,9 +9,7 @@ import { Metadata } from 'next'
 
 const POSTS_PER_PAGE = 5
 
-export async function generateMetadata(props: {
-  params: Promise<{ tag: string }>
-}): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ tag: string }> }): Promise<Metadata> {
   const params = await props.params
   const tag = decodeURI(params.tag)
   return genPageMetadata({
@@ -49,11 +47,6 @@ export default async function TagPage(props: { params: Promise<{ tag: string }> 
   }
 
   return (
-    <ListLayout
-      posts={filteredPosts}
-      initialDisplayPosts={initialDisplayPosts}
-      pagination={pagination}
-      title={title}
-    />
+    <ListLayout posts={filteredPosts} initialDisplayPosts={initialDisplayPosts} pagination={pagination} title={title} />
   )
 }

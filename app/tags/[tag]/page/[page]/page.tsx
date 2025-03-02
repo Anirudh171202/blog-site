@@ -33,21 +33,13 @@ export default async function TagPage(props: { params: Promise<{ tag: string; pa
   if (pageNumber <= 0 || pageNumber > totalPages || isNaN(pageNumber)) {
     return notFound()
   }
-  const initialDisplayPosts = filteredPosts.slice(
-    POSTS_PER_PAGE * (pageNumber - 1),
-    POSTS_PER_PAGE * pageNumber
-  )
+  const initialDisplayPosts = filteredPosts.slice(POSTS_PER_PAGE * (pageNumber - 1), POSTS_PER_PAGE * pageNumber)
   const pagination = {
     currentPage: pageNumber,
     totalPages: totalPages,
   }
 
   return (
-    <ListLayout
-      posts={filteredPosts}
-      initialDisplayPosts={initialDisplayPosts}
-      pagination={pagination}
-      title={title}
-    />
+    <ListLayout posts={filteredPosts} initialDisplayPosts={initialDisplayPosts} pagination={pagination} title={title} />
   )
 }

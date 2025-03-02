@@ -60,14 +60,8 @@ You can even choose to do a full text search over the entire generated blog cont
 
 ```tsx
 function createSearchIndex(allBlogs) {
-  if (
-    siteMetadata?.search?.provider === 'kbar' &&
-    siteMetadata.search.kbarConfig.searchDocumentsPath
-  ) {
-    writeFileSync(
-      `public/${siteMetadata.search.kbarConfig.searchDocumentsPath}`,
-      JSON.stringify(sortPosts(allBlogs))
-    )
+  if (siteMetadata?.search?.provider === 'kbar' && siteMetadata.search.kbarConfig.searchDocumentsPath) {
+    writeFileSync(`public/${siteMetadata.search.kbarConfig.searchDocumentsPath}`, JSON.stringify(sortPosts(allBlogs)))
     console.log('Local search index generated...')
   }
 }
