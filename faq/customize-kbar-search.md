@@ -30,12 +30,12 @@ export const SearchProvider = ({ children }) => {
             perform: () => router.push('/'),
           },
           {
-            id: 'projects',
-            name: 'Projects',
+            id: 'gallery',
+            name: 'Gallery',
             keywords: '',
             shortcut: ['p'],
             section: 'Home',
-            perform: () => router.push('/projects'),
+            perform: () => router.push('/gallery'),
           },
         ],
         onSearchDocumentsLoad(json) {
@@ -60,8 +60,14 @@ You can even choose to do a full text search over the entire generated blog cont
 
 ```tsx
 function createSearchIndex(allBlogs) {
-  if (siteMetadata?.search?.provider === 'kbar' && siteMetadata.search.kbarConfig.searchDocumentsPath) {
-    writeFileSync(`public/${siteMetadata.search.kbarConfig.searchDocumentsPath}`, JSON.stringify(sortPosts(allBlogs)))
+  if (
+    siteMetadata?.search?.provider === 'kbar' &&
+    siteMetadata.search.kbarConfig.searchDocumentsPath
+  ) {
+    writeFileSync(
+      `public/${siteMetadata.search.kbarConfig.searchDocumentsPath}`,
+      JSON.stringify(sortPosts(allBlogs))
+    )
     console.log('Local search index generated...')
   }
 }
