@@ -24,6 +24,12 @@ const projectsData: Project[] = [
     imgSrc: '/static/images/snapsearch.png',
     href: 'https://www.reddit.com/r/Python/s/IwkMRGgs8x',
   },
+  {
+    title: '(Hobby) Guitar Covers',
+    description: 'Youtube Playlist for some of my favourite songs I\'ve covered',
+    imgSrc: '/static/images/monkeys.png',
+    href: 'https://www.youtube.com/playlist?list=PLsEUbO8YQBJudEbMWdWmc0XXC7DAqx3ue',
+  },
 
 ]
 

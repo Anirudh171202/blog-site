@@ -3,7 +3,8 @@ const siteMetadata = {
   title: "Ani's Blog",
   author: 'Anirudh Sathiya',
   headerTitle: "Ani's Blog",
-  description: '',
+  description:
+    'Hey there! My name is Anirudh. I like figuring out how things work — and writing about it now and then.',
   language: 'en-us',
   theme: 'system', // system, dark or light
   siteUrl: 'https://anirudhsathiya.com',
