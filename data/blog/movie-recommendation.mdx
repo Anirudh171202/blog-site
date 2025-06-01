@@ -1,0 +1,144 @@
+---
+title: What movie should we watch?
+date: '2025-06-02'
+tags: ['Game Theory', 'Recommendation Systems']
+draft: true
+summary:
+score: 5
+---
+
+It's a Friday night. Your friends are over at your place with popcorn. You can’t seem to decide on a movie that everybody wants to watch.
+
+Let's say you somehow obtain a list of everybody's movie preferences. Genre's, favourite movies, dislikes etc. Now it shouldn't be too hard to decide the objectively best movie amongst your friends.....or is it?
+
+You might think: “Why not just vote?” That’s a good instinct. Each person could rank the movies, and then you pick the most popular one.
+
+#### Example voting scenario:
+
+| Person     | Vote                   |
+| ---------- | ---------------------- |
+| Frodo      | Movie A                |
+| Gandalf    | Movie A                |
+| Gollum     | Movie B                |
+| **Result** | **Movie A wins (2/3)** |
+
+Even though Movie A wins the popular vote, the group might "like" movie B more. Consider the following preferences:
+
+#### Maximum Total _Happiness_:
+
+| Person            | Movie A               | Movie B | Movie C |
+| ----------------- | --------------------- | ------- | ------- |
+| Frodo             | 6                     | 4       | 5       |
+| Gandalf           | 6                     | 4       | 5       |
+| Gollum            | 1                     | 9       | 5       |
+| **Total Utility** | **13**                | **17**  | **15**  |
+| **Result**        | **Movie B wins (17)** |
+
+This is because Movie B has the highest group utility $i^*=\arg\max_i \sum_{u\in U_i} u_i$ amongst the three movies. In game theory terms, this is the _utilitarian_ choice.
+
+<div style={{ display: 'flex', justifyContent: 'center' }}>
+  <img src="/static/images/gollumm.png" alt="Alt text" style={{ width: '35%' }} />
+</div>
+
+One might argue however, that Movie B is chosen only because it makes Gollum extremely happy. What if we chose Movie C because it makes everybody equally happy, not just because Gollum's skewed preferences. This is called the _egalitarian_ choice, where
+
+$$
+i^* = \underset{i}{\arg\max} \min_{u \in U_i} u_i
+$$
+
+is maximized. Or in simple terms, we just pick the option that maximizes the happiness of the least happy person.
+
+#### Maximum Least _Happiness_:
+
+| Person                 | Movie A          | Movie B | Movie C |
+| ---------------------- | ---------------- | ------- | ------- |
+| Frodo                  | 6                | 4       | 5       |
+| Gandalf                | 6                | 4       | 5       |
+| Gollum                 | 1                | 9       | 5       |
+| **Least happy person** | **1**            | **4**   | **5**   |
+| **Result**             | **Movie C wins** |
+
+We can probably agree now that this isn't an easy problem. I can talk to you about more methods but this isn't a game theory lecture- we just want to find a common movie. But how can we even rate every movie anyway?
+
+## Recommendation systems
+
+In the field of recommendation systems, there's two widely used techniques that we can take advantage of-
+
+- **Collaborative filtering**: In simple terms, collaborative filtering compares your movie preferences, with others that have similar preferences, say Frodo's. It then infers that you might like a movie that Frodo enjoyed.
+- **Content-based filtering**: Content based filtering takes a different approach. It looks at properties of the movie like Genre and other metadata to recommend additional movies with "similar" properties.
+
+However, collaborative filtering requires lots of user preferences to be able to find users with similar tastes. Content-based systems require good embedding models to be able to generate different vectors for movies based on metadata.
+
+For our movie recommender, we don't want to be bottlenecked by the number of people adding their movie preferences. Collaborative strategies only makes sense when we can elicit preferences from a meaningful number of users, also known as the [cold-start problem.](<https://en.wikipedia.org/wiki/Cold_start_(recommender_systems)>) Hence, we shall follow a content-based approach.
+
+### Step 1: Represent Movies as Vectors
+
+Let's convert the movie's metadata into a vector space.
+| Movie | Genres | Embedding (simplified) |
+|-----------|------------------|------------------------------|
+| Inception | Sci-Fi, Thriller | [1, 0, 1, 0.3, ...] |
+| Titanic | Romance, Drama | [0, 1, 0, 0.9, ...] |
+
+<div style={{ display: 'flex', justifyContent: 'center' }}>
+  <img src="/static/images/word2vec.png" alt="Alt text" style={{ width: '55%' }} />
+</div>
+
+In a good embedding, related movies will have vectors pointing in the same direction, and unrelated movies will have vectors perpendicular to each other (i.e. $\vec{A} \cdot \vec{B} = 0$). Methods such as one hot encoding and TF-IDF can be used to obtain movie embeddings.
+
+Let the movie matrix be represented as $$M \in \mathbb{R}^{n \times d}$$ where $n$ is the number of movies and $d$ is the embedding dimension.
+
+### Step 2: Build User Preference Vectors
+
+Each user has rated a small number of movies. For each user $u$, we compute a user profile vector as the weighted average of the embeddings of rated movies:
+
+$$
+\vec{v}_u = \frac{1}{\sum_{i \in R_u} r_{u,i}} \cdot {\sum_{i \in R_u} r_{u,i} \cdot \vec{v}_i}
+$$
+
+<div style={{ display: 'flex', justifyContent: 'center' }}>
+  <img src="/static/images/vec-avg.png" alt="Alt text" style={{ width: '20%' }} />
+</div>
+
+Where:
+
+- $R_u$ is the set of movies rated by user $u$
+- $r_{u,i} \in [1,10]$ is the rating given by user $u$ to movie $i$
+- $\vec{v}_i$ is the embedding vector for movie $i$
+
+### Step 3: Aggregating User Preferences
+
+Now the million-dollar question: how do you pick one movie for the group?
+
+**Option 1:** Utilitarian Aggregation  
+Maximize total happiness of the group:
+
+$$
+\vec{v}_{\text{group}} = \frac{1}{|U|} \sum_{u \in U} \vec{v}_u
+$$
+
+For every candidate movie $m$, compute similarity:
+
+**Option 2:** Egalitarian Aggregation
+Worried one person is dominating the choice? Choose the movie that maximizes the minimum satisfaction:
+
+$$
+\text{score}(m) = \cos(\theta) = \frac{\vec{v}_{\text{group}} \cdot \vec{v}_m}{\|\vec{v}_{\text{group}}\| \, \|\vec{v}_m\|}
+$$
+
+$$
+\vec{v}_m^* = \arg\max_{\vec{v}_m} \left( \min_{u \in U} \text{score}(m) \right)
+$$
+
+### Step 4: Find the closest movie in your movie database to $\vec{v}_m$
+
+With hundreds of thousands of movies, brute-force similarity search is slow. Use:
+
+- FAISS (Facebook AI Similarity Search)
+- [Annoy (Spotify)](https://sds-aau.github.io/M3Port19/portfolio/ann/)
+- ScaNN (Google)
+
+These return top-k cosine-similar vectors in sub-linear time.
+
+_P.S. They ended up watching Shrek. Again._
+
+<BlogNewsletterForm title="Get an email when the next blog is published! No spam." />
