@@ -7,13 +7,14 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 // You might need to insert additional domains in script-src if you are using external services
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-eval' 'unsafe-inline' giscus.app vitals.vercel-insights.com vitals.vercel-analytics.com;
+  script-src 'self' 'unsafe-eval' 'unsafe-inline' giscus.app vitals.vercel-insights.com vitals.vercel-analytics.com d3js.org;
   style-src 'self' 'unsafe-inline';
   img-src * blob: data:;
   media-src *.s3.amazonaws.com;
   connect-src * vitals.vercel-insights.com vitals.vercel-analytics.com;
   font-src 'self';
-  frame-src giscus.app
+  frame-src *;
+  frame-ancestors *;
 `
 
 const securityHeaders = [
@@ -28,10 +29,10 @@ const securityHeaders = [
     value: 'strict-origin-when-cross-origin',
   },
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
-  {
-    key: 'X-Frame-Options',
-    value: 'DENY',
-  },
+  // {
+  //   key: 'X-Frame-Options',
+  //   value: '',
+  // },
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
   {
     key: 'X-Content-Type-Options',
