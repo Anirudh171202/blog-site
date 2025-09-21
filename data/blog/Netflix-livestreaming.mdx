@@ -1,0 +1,122 @@
+---
+title: Netflix's Livestreaming Disaster- The Engineering Challenge of Streaming at Scale
+date: '2025-09-21'
+tags: ['System Design', 'Computer Networking', 'Cryptography']
+draft: false
+summary:
+---
+
+[ Readtime: \< 7m ]
+
+
+<div style={{ display: 'flex', justifyContent: 'center' }}>
+  <img src="/static/images/tyson-v-paul.png" alt="Alt text" style={{ width: '50%' }} />
+</div>
+
+On November 15, 2024, Mike Tyson was set to fight Jake Paul at the AT&T Stadium in Arlington, Texas. It was Netflix’s biggest bet entering the world of live streaming, which their engineering team had been preparing for 3 years. In the following hours of the fight, some 65 million people logged on to Netflix, making it the largest single sports stream ever recorded.
+
+
+However, things didn’t go as expected for Netflix. Many viewers were faced with a series of buffering issues, and some were shown a dreaded "black screen of death”. Many affected users flocked online to express their frustration on how they couldn’t enjoy something that they had paid for, but few understood the magnitude of an engineering challenge Netflix had undertaken.
+
+<div style={{ display: 'flex', justifyContent: 'center' }}>
+  <img src="/static/images/netflix-tv.png" alt="Alt text" style={{ width: '75%' }} />
+</div>
+
+In this blog post, I'll attempt to get to the bottom of Netflix's live streaming failure. We'll dissect the unique challenges of live streaming, so we can better understand what really went wrong that night.
+
+
+To understand the bottlenecks in live streaming, let's first look at the foundation: how static content, like movies and TV shows, is served on Netflix today.
+
+## How Netflix Works
+
+When a new movie is added to the Netflix catalog, it first goes through the ingestion pipeline.
+
+<div style={{ display: 'flex', justifyContent: 'center' }}>
+  <img src="/static/images/content-ingestion.png" alt="Alt text" style={{ width: '120%' }} />
+</div>
+<span style={{ color: 'grey', fontSize: '0.8em', display: 'block', textAlign: 'center' }}>
+  Apologies for the poor diagram. I am not artistically inclined and used powerpoint to draw this image.
+</span>
+
+
+ - __Demuxing:__  The content is split into audio and video, then broken down into 10-30s chunks and is put on a processing queue. The media processing hardware takes a chunk of video/audio from the queue and encodes it into different formats called a bitrate ladder.
+ - __Transcoding:__ For example, Netflix might choose to store content in the following formats:
+    - 2160p (4K) at 15 Mbps
+    - 1080p (Full HD) at 5 Mbps
+    - 720p (HD) at 2 Mbps
+    - 480p (SD) at 1 Mbps
+
+    The transcoder then encodes these content blocks into the formats, such as the ones listed above, using codecs such as H.264, H.265 and AV1. For instance, H.264 and H.265 are patented formats and services like Netflix that broadcast content on the codecs need to pay a licensing fee. H.264 is widely adopted by different types of hardware, whereas H.265 and AV1 are newer and offer better compression rates, enabling higher quality video streaming on a given bandwidth. Hence, the need to encode one video into multiple formats. 
+ - __DRM:__ If you want to be a streaming service, you wouldn’t be allowed to stream content from movie studios without Digital Rights Management (DRM), which is used to securely broadcast the content.
+   
+   On the server side, the chunks of content get encrypted with a unique content encryption key using an algorithm like AES-128. The Content Encryption Key (CEK) along with the segment hash will now reside in a DRM license server. When a user requests a video segment, the client application sends its  credentials to this DRM server, and gets the CEK key encrypted with a Client Public Key. 
+
+   On the client side, the DRM-encrypted video is decrypted by a Content Decryption Module (CDM) using the encrypted CEK. The CDM uses a privileged area of the CPU, called the Trusted Execution Environment (TEE). Only apps that have been signed by a key that is baked into the processor at manufacturing time such as Google Widevine or Apple Fairplay can run on the TEE. This is done to prevent pirates from accessing the decrypted video frames. 
+
+  <div style={{ display: 'flex', justifyContent: 'center' }}>
+  <img src="/static/images/decryption.png" alt="Alt text" style={{ width: '120%' }} />
+  </div>
+  <span style={{ color: 'grey', fontSize: '0.8em', display: 'block', textAlign: 'center' }}>
+  The client fetches the encrypted video and the DRM key to securely decrypt the video.
+  </span>
+
+ - __CDN:__ Have you ever noticed that the ads on youtube often load faster than the videos itself? 
+
+   This is because ads are usually given priority over content traffic while being cached in CDNs or Content Delivery Networks. Netflix, for example, privately owns a vast array of [OpenConnect CDN servers](https://openconnect.netflix.com/en/?utm_referrer=https://www.google.com/) spread out in different locations to cache and deliver content closer to users, ensuring faster access to popular shows and movies. Relying on a single, central server would not only slow down streaming times for viewers but would also be more expensive for Netflix. The data would have to be routed through a web of interconnected network providers, or Autonomous Systems as we call it in Networking, with each hop adding to latency and cost. This intricate routing is managed by the infamous Border Gateway Protocol (BGP), which is essential for keeping the internet operational. But that’s probably a topic for another day.
+
+## How does livestreaming compare to on-demand streaming?
+While movies are chunked into 10-30 second blocks for processing, livestreams have to be chunked into 1-2 second segments to minimize latency. This is because even a 5 second delay in streaming could ruin the entire experience of watching the sport.
+
+Not only are there more chunks for a given duration in the ingestion queue, but they must also be processed instantaneously. This means that the Netflix client requesting chunks about every 30 seconds would now be making around 1 server request per second. As if that weren't hardware intensive enough, sports livestreams often scale to millions of concurrent users.
+
+> Well, why not broadcast the same stream to everyone?
+
+Unlike traditional TV broadcast, online livestreaming doesn’t rely on multicast because the internet’s infrastructure isn’t designed to support it at global scale.
+
+TV Broadcast (Multicast): A station transmits a single multicast stream that’s replicated within the network and delivered to anyone tuned in. This is highly efficient—one stream serves millions of viewers.
+
+Online Streaming (Unicast): Services like Netflix or YouTube instead create a one-to-one connection between client and server. This enables:
+ - __Security/DRM:__ TLS handshakes and per-user DRM are far simpler over unicast. Multicast would require complex, individualized encryption layers on top of a shared stream.
+
+ - __Adaptive Bitrate:__ Clients adjust video quality in real time based on bandwidth, CPU, and display. CDNs serve personalized bitrate streams, which multicast can’t handle.
+
+ - __Interactivity:__ Features like pause, rewind, or seeking rely on direct server connections.
+
+Hence, even with Kubernetes and modern load balancing servers, it could be very challenging to scale hardware resources in a short span of time to allow per-second requests for millions of users.
+
+
+## So what went wrong with netflix?
+
+  <div style={{ display: 'flex', justifyContent: 'center' }}>
+  <img src="/static/images/angry-fan.png" alt="Alt text" style={{ width: '120%' }} />
+  </div>
+
+While we can never know for sure, I suspect that the fault lies both in Netflix’s lack of preparation and also ISPs oversubscribing their bandwidth.
+
+Putting on my tin-foil hat, it is unlikely that it was purely a resources issue from Netflix’s side, as they are a massive 500B company trying to enter the livestreaming market.
+
+We also know that Netflix is known for paying their software engineers top salaries and making their software for their internal tools and CDNs in-house. Some of this has even been discussed in their engineering blog at https://netflixtechblog.com/. While there's pros and cons for reinventing the wheel, sometimes developing tools from scratch comes at the cost of finding escape bugs during runtime. This means that their CDNs or their DRM server config could have potentially been the bottleneck. 
+
+Also, Netflix’s existing infrastructure, including their openconnect CDNs, is tailor made for processing static content. As quoted by a HN user:
+
+>So the issue is that Netflix gets its performance from colocating caches of movies in ISP datacenters, and a live broadcast doesn't work with that. It's not just about the sheer numbers of viewers, it's that a live model totally undermines their entire infrastructure advantage.
+
+
+Another issue arises because of internet service providers (ISPs) oversubscribing their bandwidth. This occurs when a massive number of users—say livestream viewers out of the NYC metro area—are funneled to a single server. The sudden surge from an ISP that typically has low traffic can overload its edge server. While your data center may be able to handle the overall load, the network links between your data center and the ISP can become saturated. 
+
+We know that this happened as majority users from certain locations were experiencing throttling issues, and users who used a VPN to a different location claim to have enjoyed a better livestream.
+
+To conclude, seeing that black screen was certainly a party-killer. However, the fact that one can instantaneously transmit high-quality footage to millions of fans across the world securely is nothing short of a modern-day miracle .
+
+*Not all the details listed below are accurate to Netflix, they represent how content streaming platforms are architectured in general.*
+## Sources: 
+
+ - https://www.cloudflare.com/learning/video/what-is-live-streaming/
+ - https://www.cloudflare.com/learning/video/live-stream-encoding/
+ - https://news.ycombinator.com/item?id=42153953
+ - https://www.wowza.com/blog/adaptive-bitrate-streaming
+ - https://trtc.io/learning/architecture-of-streaming-media-services
+ - https://softvelum.com/2025/08/multi-tier-streaming-architecture/
+ - https://www.reddit.com/r/VIDEOENGINEERING/comments/1gumo8q/tyson_fight_complexity_of_live_streaming/
+ - Decrypt icons created by gravisio @ https://www.flaticon.com/free-icons/decrypt
+
