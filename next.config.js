@@ -10,7 +10,7 @@ const ContentSecurityPolicy = `
   script-src 'self' 'unsafe-eval' 'unsafe-inline' giscus.app vitals.vercel-insights.com vitals.vercel-analytics.com d3js.org;
   style-src 'self' 'unsafe-inline';
   img-src * blob: data:;
-  media-src *.s3.amazonaws.com;
+  media-src *.s3.amazonaws.com storage.googleapis.com;
   connect-src * vitals.vercel-insights.com vitals.vercel-analytics.com;
   font-src 'self';
   frame-src *;

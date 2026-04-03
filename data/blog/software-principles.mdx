@@ -6,7 +6,7 @@ draft: false
 summary:
 ---
 
-[ Readtime: \<4m ]
+[ Readtime: 4 minutes ]
 
 <div style={{ display: 'flex', justifyContent: 'center' }}>
   <img src="/static/images/harold.png" alt="Alt text" style={{ width: '75%' }} />
@@ -19,16 +19,16 @@ me explain with a few examples.
 
 ## All Hail Testing
 
-You can write the prettiest code in the world, but without tests, it’s basically a ticking time bomb. Software is non-deterministic after a certain point — the more complex it gets, the more chaotic it gets. Dependencies change, environments shift, someone decides Friday at 5 PM is the perfect time to upgrade a core library. You can’t predict everything, but you can write tests.
+You can write the prettiest code in the world, but without tests, it’s basically a ticking time bomb. Software is non-deterministic after a certain point: the more complex it gets, the more chaotic it gets. Dependencies change, environments shift, someone decides Friday at 5 PM is the perfect time to upgrade a core library. You can’t predict everything, but you can write tests.
 
-Actually, you should write tests first — before the code. Yes, it feels weird at first, like writing a movie review before seeing the movie. But it forces you to think about what the code is supposed to do, not just what you feel like coding.
+Actually, you should write tests first before the code. Yes, it feels weird at first, like writing a movie review before seeing the movie. But it forces you to think about what the code is supposed to do, not just what you feel like coding.
 There are all sorts of tests:
 
 - Unit tests (Does this tiny piece work?)
 - Integration tests (Do these pieces play nicely together?)
 - End to end tests (Does the whole system actually do the thing?)
 
-And don’t just write tests and shove them in a corner. Publish them along with your code. Tests aren’t someone else’s problem — they’re part of your deliverable. If your tests don’t ship with your code, you’re just handing future-you a ticking time bomb and hoping they have better reflexes.
+And don’t just write tests and shove them in a corner. Publish them along with your code. Tests aren’t someone else’s problem: they’re part of your deliverable. If your tests don’t ship with your code, you’re just handing future-you a ticking time bomb and hoping they have better reflexes.
 
 ## Too Many Cooks shouldn’t spoil the broth
 
@@ -37,7 +37,8 @@ A few non-negotiables:
 
 - Continuous Integration (CI): Every piece of code gets tested before it’s allowed into the mainline. No exceptions. That feature you’re working in a different branch? Try to publish unit-tested incremental changes to the main branch, otherwise you might end up in merge hell!
 - Design Docs: Before you write a single line of code, write down what you’re trying to do, why you’re doing it, and how you’re doing it. It’ll save you (and your team) from endless meetings.
-- Communication: You can’t over-communicate in software projects. Slack messages, comments on tickets, over-explaining in code reviews — all good things. Silence breeds bugs. Document everything you do. Either in comments, commits or as standalone documents. That brings me to my next point.
+- Communication: You can’t over-communicate in software projects. Slack messages, comments on tickets, over-explaining in code reviews: all good things. Silence breeds bugs. Document everything you do. Either in comments, commits or as standalone documents. That brings me to my next point.
+
 
 ## Readability (Every variable name matters):
 
