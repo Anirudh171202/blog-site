@@ -64,7 +64,7 @@ That's why you need to wait so long for the first token!
 
 ### KV Cache
 
-During prefill, every token produces a Key vector and a Value vector at every layer. Rather than throwing these away, the model stores them in a structure called the KV Cache. During decode, each new token only needs to compute its own Query vector, then look up the cached Keys and Values to compute attention. That's why Q isn't cached — only the current token's query matters, but every previous token's Key and Value are still needed.
+During prefill, every token produces a Key vector and a Value vector at every layer. Rather than throwing these away, the model stores them in a structure called the KV Cache. During decode, each new token only needs to compute its own Query vector, then look up the cached Keys and Values to compute attention. That's why Q isn't cached. Only the current token's query matters, but every previous token's Key and Value are still needed.
 
 The KV Cache grows by one row per token per layer. This is the structure that dominates GPU memory during inference, and the reason the rest of this post keeps coming back to it.
 
@@ -90,7 +90,7 @@ Rough napkin math for Llama 3.1 model, which has 128 layers, hidden dimension of
 
 KV Cache for:
  - one token: 2 bytes * 16384 hidden dimensions * 2 (for Key + Value vectors) = 64KB
- - all 128 layers = 64 KB * 128 ~=8MB (assuming hypothetical MHA)
+ - all 128 layers = 64 KB * 128 ~=8MB (assuming MHA, i.e. one KV head per query head)
  - max context of 128K tokens = 8 MB * 128000 =~ **1 TB per request**
 
 Holy sheep. 
