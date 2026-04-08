@@ -58,7 +58,9 @@ Then re-apply softmax, which normalizes the probability distribution to add up t
   <img src="/static/images/sampler4.png" alt="Alt text" style={{ maxWidth: '75%', height: 'auto' }} />
 </div>
 
-### What does this actually look like?
+In our case, we would want to set a temperature $T<1.0$ to sharpen the distribution toward the most likely tokens \{Lyon, Paris\}. 
+
+### What does changing $T$ actually look like?
 
 **Prompt**: *"The detective walked into the room and..."*
 
@@ -66,26 +68,37 @@ Then re-apply softmax, which normalizes the probability distribution to add up t
 |---|---|---|
 | **T = 0.2** | Predictable | *"...immediately noticed the body on the floor. He pulled out his notebook and began to document the scene."* |
 | **T = 0.7** | Sweet Spot |*"...froze. Something was off... not the blood, not the furniture. The clock on the wall was still ticking."* |
-| **T = 1.5** | Unpredictable |*"...tasted the silence like a bad Tuesday. The lamp had apples. Somewhere, a fax machine."* |
+| **T = 2.5** | Unpredictable |*"...tasted the silence like a bad Tuesday. The lamp had apples. Somewhere, a fax machine."* |
+
 ### What if we just cut the tail out?
 
 Great call. In ML terms, that's top-k and top-p sampling.
 
 Top-k keeps the $k$ highest probability tokens and zeros out the rest. With $k=2$, only Lyon and Paris survive.
 
-Top-p, also known as nucleus sampling, is a bit smarter. Instead of a fixed count, you keep tokens until their cumulative probability crosses a threshold. So if we set $p=0.80$:
+Top-p, also known as nucleus sampling, is a bit smarter. Instead of a fixed count, you keep tokens until their cumulative probability crosses a threshold. So if we set $p=0.75$:
 
 $$
 \text{Lyon (0.35)} + \text{Paris (0.32)} + \text{the (0.12)} = 0.79 > 0.75 \text{ (top-p threshold)}
 $$
 
-Those three survive. 
 
-There are other hyperparameters that can be set here. I'll let you read them from sampler
+Combining everything, $T=0.75$ sharpens the distribution, top-p=0.75 cuts the detail. This improves the chances of Paris getting picked by 1.5X, despite other noisy logits!
+
+
+<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
+  <img src="/static/images/sampler5.png" alt="Alt text" style={{ maxWidth: '120%', height: 'auto' }} />
+</div>
+
+In practice, most hyperparameters are used to tune model output after training, based on the use case.
+
+For example, Google Deepmind's AlphaCode skipped top-k and top-p sampling entirely. [In their paper](https://arxiv.org/pdf/2203.07814), they use a relatively high temperature to generate a diverse set of solutions for competitive programming questions, upon which a test suite filtered the bad ones out. This helped them beat majority of the human competitors on Codeforces.
+
+That's why asking ChatGPT the same question twice doesn't give you the same output. Let's explore why this uncertainty makes it difficult to secure.
 
 ## LLM Security
 
-Traditionally, software has always been deterministic. The same input produces the same output. Therefore, if you took the right counter measures you would always be reasonably secure against common hacking techniques. For example, parameterize your SQL queries and SQL injection is dead.
+Traditionally, software has always been deterministic. Therefore, if you took the right counter measures you would always be reasonably secure against common hacking techniques. For example, parameterize your SQL queries and SQL injection is dead.
 
 LLMs don't work that way. A jailbreak isn't an exploit in a traditional sense. 
 
@@ -93,9 +106,15 @@ LLMs don't work that way. A jailbreak isn't an exploit in a traditional sense.
 
 There's no clean fix for such attacks. You can train a smaller model to be a safety filter. But also, a safety filter on an LLM is more like a bouncer who sometimes lets things through if you ask nicely enough in French.
 
-That being said, let's explore some interesting inference themed attacks.
+### Training Data Extraction
 
-### Model extraction
+Remember how lower temperature = more predictable? Turns out, "more predictable" also means "more likely to vomit out training data."
+
+[Carlini et al.](https://arxiv.org/pdf/2012.07805) prompted GPT-2 and got it to spit out memorized names, phone numbers, email addresses, and even 128-bit UUIDs. They compared perplexity across model sizes: if GPT-2 XL finds a sequence way more likely than GPT-2 Small, it's probably memorized. 
+
+The uncomfortable part is that they used greedy sampling to do it. At temperature 0, the model follows the highest-probability path every time, and memorized sequences sit right at the top.
+
+### Model Weight Extraction
 Lets address the Large Language Model in the room. I apologize. 
 
 Training GPT-4 reportedly cost over $100 million. The problem is that many inference APIs let you request logits produced by the model.
@@ -108,19 +127,15 @@ Fortunately, the solution for this fix is pretty easy. OpenAI's API doesn't retu
 
 Most production inference servers cache the KV state of common prefixes. System prompts, shares instructions, boilerplates etc. This saves computing the KV Cache for boilerplate for every user.
 
-In a poorly isolated system, an attacker can design a prompt that shares a prefix with a cached context. Since both requests point to the same KV block, the attackers attention runs against the shared content. This could leak another user's information or the system prompt.
+In a poorly isolated system, an attacker can design a prompt that shares a prefix with a cached context. Since both requests point to the same KV block, the attackers attention runs against the shared content. This could expose the system prompt or reveal what prefixes other users are hitting. 
 
 This is commonly addressed by KV block ownership. Shared contexts go into shared blocks. The lookup key for a private block is a hash of the \{ token sequence, userID \}. So even if two users send identical tokens, there isn't a key collision.
 
-### Speculative Decoding
-
-Speculative decoding is a recent inference optimization where a draft model proposes several tokens, and the main model verifies them in one forward pass.
-
-Since the draft model is trained differently, it could be more unhinged and generate a harmful draft. This creates the possibility of it slipping past the bigger model's rejection sampling aka verification.
+Even with these guardrails, there can be side-channel attacks such as analyzing Time-to-First-Token to expose hidden prefixes.
 
 ### Key Takeaway
 
-Every engineering optimization for LLM inference introduced a new interface that can be attacked. The tokenizer chunked your input in ways the model can't see. The KV cache traded isolation for efficiency. Speculative decoding traded safety margin for speed.
+Every engineering optimization for LLM inference introduced a new interface that can be attacked. The tokenizer chunked your input in ways the model can't see. The KV cache traded isolation for efficiency.
 
 None of these are bugs. They are the reason AI inference costs cents, and not dollars. But security is a different question that you can't put a cost against. That's what makes these problems hard to solve.
 
